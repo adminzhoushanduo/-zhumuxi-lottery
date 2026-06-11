@@ -39,7 +39,7 @@ var IP="./assets/赛罗奥特曼.jpg";
 var TASKS=[{id:"t1",emoji:"🧸",name:"自己收拾玩具",desc:"把玩过的玩具放回原位"},{id:"t2",emoji:"🪥",name:"自己刷牙洗脸",desc:"早晚自己刷牙"},{id:"t3",emoji:"🎨",name:"画一幅画送给爸爸妈妈",desc:"画一幅漂亮的画"},{id:"t4",emoji:"🧹",name:"帮忙做一件家务",desc:"做一件力所能及的家务"},{id:"t5",emoji:"📖",name:"读一本小故事书",desc:"安静地读完一本书"},{id:"t6",emoji:"👗",name:"自己穿好衣服",desc:"早上自己挑选衣服"},{id:"t7",emoji:"🌙",name:"10点之前关灯睡觉",desc:"按时睡觉，养成好习惯"},{id:"t8",emoji:"💆",name:"给妈妈按摩5分钟",desc:"帮妈妈按摩放松一下"}];
 var AP="5201314",SK="zmx_v5",TD=new Date().toISOString().split("T")[0];
 var D=null;
-function def(){return{lastDrawDate:null,extraChances:0,ownedGifts:[],history:[],diamond:0,shardCount:0,pityCount:0,tasks:TASKS.map(function(t){return{id:t.id,status:"todo",content:"",submitDate:null}}),firstVisit:true}}
+function def(){return{lastDrawDate:null,extraChances:0,ownedGifts:[],history:[],diamond:0,shardCount:0,pityCount:0,tasks:TASKS.map(function(t){return{id:t.id,status:"todo",content:"",submitDate:null}}),firstVisit:true,lastResetDate:null}}
 async function initData(){try{var r=await fetch("/api/data");var d=await r.json();if(d&&d.tasks){localStorage.setItem(SK,JSON.stringify(d));D=d;return}}catch(e){}var ld=loadLocal();D=ld||def()}
 function loadLocal(){try{var r=localStorage.getItem(SK);if(r)return JSON.parse(r)}catch(e){}return null}
 function sv(){localStorage.setItem(SK,JSON.stringify(D));fetch("/api/data",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(D)}).catch(function(){})}
@@ -84,7 +84,7 @@ function showToast(msg){var el=document.getElementById("toast");el.textContent=m
 function showModal(ic,ti,de){document.getElementById("modalIcon").textContent=ic;document.getElementById("modalTitle").textContent=ti;document.getElementById("modalDesc").textContent=de;document.getElementById("modalOverlay").classList.add("active")}
 function closeModal(){document.getElementById("modalOverlay").classList.remove("active")}
 function initStars(){var c=document.getElementById("starsBg");["⭐","✨","💕","🌸","🦋"].forEach(function(e){for(var i=0;i<4;i++){var s=document.createElement("span");s.textContent=e;s.style.left=Math.random()*100+"%";s.style.fontSize=(12+Math.random()*16)+"px";s.style.animationDuration=(10+Math.random()*20)+"s";s.style.animationDelay=(Math.random()*20)+"s";c.appendChild(s)}})}
-async function init(){await initData();initStars();renderGrid();if(D.lastDrawDate&&D.lastDrawDate!==TD){D.lastDrawDate=null;sv()}if(D.firstVisit){D.firstVisit=false;sv();setTimeout(function(){showModal("🌟","欢迎来到魔法抽奖！","🎰 老虎机抽奖全新升级！\n\n💎 钻石：收集50个可兑换一次抽奖机会\n🧩 碎片：收集50个可兑换塞罗奥特曼\n🌟 中间终极大奖：直接获得塞罗奥特曼！\n👑 100次抽奖保底必中终极大奖！\n\n每天免费转一次，完成任务还能加机会！\n💕 加油，小公主！")},500)}updAll()}
+async function init(){await initData();if(D.lastResetDate!==TD){D.lastResetDate=TD;(D.tasks||[]).forEach(function(t){if(t.status==="approved"||t.status==="rejected"){t.status="todo";t.content="";t.submitDate=null}});sv()}initStars();renderGrid();if(D.lastDrawDate&&D.lastDrawDate!==TD){D.lastDrawDate=null;sv()}if(D.firstVisit){D.firstVisit=false;sv();setTimeout(function(){showModal("🌟","欢迎来到魔法抽奖！","🎰 老虎机抽奖全新升级！\n\n💎 钻石：收集50个可兑换一次抽奖机会\n🧩 碎片：收集50个可兑换塞罗奥特曼\n🌟 中间终极大奖：直接获得塞罗奥特曼！\n👑 100次抽奖保底必中终极大奖！\n\n每天免费转一次，完成任务还能加机会！\n💕 加油，小公主！")},500)}updAll()}
 document.addEventListener("DOMContentLoaded",init);
 
 // 监听其他页面修改的数据（比如 admin.html 审核通过后自动刷新）
