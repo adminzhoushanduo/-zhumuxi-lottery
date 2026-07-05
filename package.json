@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "description": "✨ 周沐汐的魔法抽奖 ✨",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node api/data.js"
-  },
-  "dependencies": {
-    "@vercel/kv": "^2.1.0"
+    "dev": "node server.js"
   }
 }
