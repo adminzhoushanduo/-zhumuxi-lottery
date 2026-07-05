@@ -1,8 +1,33 @@
-const { kv } = require('@vercel/kv');
-
 const DATA_KEY = 'lottery_data';
 const DATA_FILE_PATH = '/tmp/data.json';
 const SEED_PATH = require('path').join(__dirname, '..', 'data', 'data.json');
+
+// Use Upstash Redis REST API directly (no @vercel/kv dependency needed)
+function kvApiUrl() { return process.env.KV_REST_API_URL; }
+function kvApiToken() { return process.env.KV_REST_API_TOKEN; }
+
+async function kvGet(key) {
+  if (!kvApiUrl()) throw new Error('KV not configured');
+  const resp = await fetch(kvApiUrl() + '/get/' + key, {
+    headers: { Authorization: 'Bearer ' + kvApiToken() }
+  });
+  if (!resp.ok) throw new Error('KV GET failed: ' + resp.status);
+  const result = await resp.json();
+  return result.result ? JSON.parse(result.result) : null;
+}
+
+async function kvSet(key, value) {
+  if (!kvApiUrl()) throw new Error('KV not configured');
+  const resp = await fetch(kvApiUrl() + '/set/' + key, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + kvApiToken(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(JSON.stringify(value))
+  });
+  if (!resp.ok) throw new Error('KV SET failed: ' + resp.status);
+}
 
 function parseBody(req) {
   return new Promise((resolve) => {
@@ -17,12 +42,12 @@ function parseBody(req) {
 
 async function readFromKV() {
   try {
-    if (!kv || !process.env.KV_REST_API_URL) throw new Error('KV not available');
-    return await kv.get(DATA_KEY);
+    return await kvGet(DATA_KEY);
   } catch {
     const fs = require('fs');
     if (fs.existsSync(DATA_FILE_PATH)) {
-      return JSON.parse(fs.readFileSync(DATA_FILE_PATH, 'utf-8'));
+      try { return JSON.parse(fs.readFileSync(DATA_FILE_PATH, 'utf-8')); }
+      catch {}
     }
     return null;
   }
@@ -30,11 +55,11 @@ async function readFromKV() {
 
 async function saveToKV(data) {
   try {
-    if (!kv || !process.env.KV_REST_API_URL) throw new Error('KV not available');
-    await kv.set(DATA_KEY, data);
+    await kvSet(DATA_KEY, data);
   } catch {
     const fs = require('fs');
-    fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(data));
+    try { fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(data)); }
+    catch {}
   }
 }
 
