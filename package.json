@@ -1,8 +1,0 @@
-{
-  "name": "zhumuxi-lottery",
-  "version": "1.0.0",
-  "description": "✨ 周沐汐的魔法抽奖 ✨",
-  "scripts": {
-    "dev": "node server.js"
-  }
-}
