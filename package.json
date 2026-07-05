@@ -2,11 +2,11 @@
   "name": "zhumuxi-lottery",
   "version": "1.0.0",
   "description": "✨ 周沐汐的魔法抽奖 ✨",
-  "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "dev": "node server.js",
+    "start": "node api/data.js"
   },
   "dependencies": {
-    "express": "^4.22.2"
+    "@vercel/kv": "^2.1.0"
   }
 }
