@@ -1,69 +1,100 @@
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
 const DATA_KEY = 'lottery_data';
 const DATA_FILE_PATH = '/tmp/data.json';
-const SEED_PATH = require('path').join(__dirname, '..', 'data', 'data.json');
+const SEED_PATH = path.join(process.cwd(), 'data', 'data.json');
 
-// Use Upstash Redis REST API directly (no @vercel/kv dependency needed)
-function kvApiUrl() { return process.env.KV_REST_API_URL; }
-function kvApiToken() { return process.env.KV_REST_API_TOKEN; }
+// Use Node.js built-in https module (always available, no fetch dependency)
+function getKvApiUrl() { return process.env.KV_REST_API_URL; }
+function getKvApiToken() { return process.env.KV_REST_API_TOKEN; }
+
+function httpsRequest(url, token, method, body) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const options = {
+      hostname: u.hostname,
+      path: u.pathname + (u.search || ''),
+      method: method || 'GET',
+      headers: { Authorization: 'Bearer ' + token }
+    };
+    if (body) {
+      options.headers['Content-Type'] = 'application/json';
+    }
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', function(chunk) { data += chunk; });
+      res.on('end', function() {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(new Error('Parse error')); }
+      });
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
 
 async function kvGet(key) {
-  if (!kvApiUrl()) throw new Error('KV not configured');
-  const resp = await fetch(kvApiUrl() + '/get/' + key, {
-    headers: { Authorization: 'Bearer ' + kvApiToken() }
-  });
-  if (!resp.ok) throw new Error('KV GET failed: ' + resp.status);
-  const result = await resp.json();
+  if (!getKvApiUrl()) throw new Error('KV not configured');
+  const result = await httpsRequest(
+    getKvApiUrl() + '/get/' + key,
+    getKvApiToken(),
+    'GET'
+  );
   return result.result ? JSON.parse(result.result) : null;
 }
 
 async function kvSet(key, value) {
-  if (!kvApiUrl()) throw new Error('KV not configured');
-  const resp = await fetch(kvApiUrl() + '/set/' + key, {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer ' + kvApiToken(),
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(JSON.stringify(value))
-  });
-  if (!resp.ok) throw new Error('KV SET failed: ' + resp.status);
+  if (!getKvApiUrl()) throw new Error('KV not configured');
+  const body = JSON.stringify(JSON.stringify(value));
+  await httpsRequest(
+    getKvApiUrl() + '/set/' + key,
+    getKvApiToken(),
+    'POST',
+    body
+  );
 }
 
 function parseBody(req) {
-  return new Promise((resolve) => {
-    let body = '';
-    req.on('data', chunk => (body += chunk));
-    req.on('end', () => {
+  return new Promise(function(resolve) {
+    var body = '';
+    req.on('data', function(chunk) { body += chunk; });
+    req.on('end', function() {
       try { resolve(JSON.parse(body)); }
-      catch { resolve({}); }
+      catch (e) { resolve({}); }
     });
   });
 }
 
-async function readFromKV() {
+async function readData() {
+  // Try KV first
   try {
     return await kvGet(DATA_KEY);
-  } catch {
-    const fs = require('fs');
-    if (fs.existsSync(DATA_FILE_PATH)) {
-      try { return JSON.parse(fs.readFileSync(DATA_FILE_PATH, 'utf-8')); }
-      catch {}
-    }
+  } catch (e) {
+    // Fallback to /tmp file
+    try {
+      if (fs.existsSync(DATA_FILE_PATH)) {
+        return JSON.parse(fs.readFileSync(DATA_FILE_PATH, 'utf-8'));
+      }
+    } catch (e2) {}
     return null;
   }
 }
 
-async function saveToKV(data) {
+async function saveData(data) {
   try {
     await kvSet(DATA_KEY, data);
-  } catch {
-    const fs = require('fs');
-    try { fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(data)); }
-    catch {}
+  } catch (e) {
+    // Fallback to /tmp file
+    try {
+      fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(data));
+    } catch (e2) {}
   }
 }
 
-function getDefaultData() {
+function defaultData() {
   return {
     lastDrawDate: '',
     extraChances: 0,
@@ -78,7 +109,8 @@ function getDefaultData() {
   };
 }
 
-module.exports = async (req, res) => {
+module.exports = function(req, res) {
+  // Handle CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -87,32 +119,33 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  try {
-    if (req.method === 'GET') {
-      let data = await readFromKV();
-
-      if (!data) {
-        const fs = require('fs');
-        if (fs.existsSync(SEED_PATH)) {
+  // Wrap everything in async
+  (async function() {
+    try {
+      if (req.method === 'GET') {
+        var data = await readData();
+        if (!data) {
+          // Seed from data.json if available
           try {
-            data = JSON.parse(fs.readFileSync(SEED_PATH, 'utf-8'));
-            await saveToKV(data);
-          } catch {}
+            if (fs.existsSync(SEED_PATH)) {
+              data = JSON.parse(fs.readFileSync(SEED_PATH, 'utf-8'));
+              await saveData(data);
+            }
+          } catch (e3) {}
         }
+        return res.json(data || defaultData());
       }
 
-      return res.json(data || getDefaultData());
-    }
+      if (req.method === 'POST') {
+        var body = await parseBody(req);
+        await saveData(body);
+        return res.json({ ok: true });
+      }
 
-    if (req.method === 'POST') {
-      const body = await parseBody(req);
-      await saveToKV(body);
-      return res.json({ ok: true });
+      return res.status(405).json({ error: 'Method not allowed' });
+    } catch (e) {
+      console.error('API Error:', e.message);
+      return res.status(500).json({ error: e.message });
     }
-
-    return res.status(405).json({ error: 'Method not allowed' });
-  } catch (e) {
-    console.error('API Error:', e.message);
-    return res.status(500).json({ error: e.message });
-  }
+  })();
 };
