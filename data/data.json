@@ -1,0 +1,115 @@
+{
+  "lastDrawDate": "2026-06-13",
+  "extraChances": 0,
+  "ownedGifts": [],
+  "history": [
+    {
+      "type": "dia",
+      "amount": 20,
+      "date": "2026-06-11",
+      "name": "钻石×20",
+      "emoji": "💎"
+    },
+    {
+      "type": "gift",
+      "amount": 0,
+      "date": "2026-06-11",
+      "name": "棒棒糖",
+      "emoji": "🍭"
+    },
+    {
+      "type": "dia",
+      "amount": 10,
+      "date": "2026-06-11",
+      "name": "钻石×10",
+      "emoji": "💎"
+    },
+    {
+      "type": "dia",
+      "amount": 10,
+      "date": "2026-06-11",
+      "name": "钻石×10",
+      "emoji": "💎"
+    },
+    {
+      "type": "dia",
+      "amount": 10,
+      "date": "2026-06-13",
+      "name": "钻石×10",
+      "emoji": "💎"
+    }
+  ],
+  "diamond": 50,
+  "shardCount": 0,
+  "pityCount": 5,
+  "tasks": [
+    {
+      "id": "t1",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t2",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t3",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t4",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t5",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t6",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t7",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t8",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t9",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t10",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    },
+    {
+      "id": "t11",
+      "status": "todo",
+      "content": "",
+      "submitDate": null
+    }
+  ],
+  "firstVisit": false,
+  "lastResetDate": "2026-06-13"
+}
